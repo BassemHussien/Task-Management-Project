@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -71,13 +70,14 @@ const Login = () => {
             />
             {errors.password && <small className="text-red-500">{errors.password.message}</small>}
           </div>
-
+          <Link to="/login/dashboard">
           <button
             type="submit"
             className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
-          >
+            >
             LOGIN
           </button>
+            </Link>
         </form>
 
         <p className="mt-6 text-blue-700 hover:underline cursor-pointer">

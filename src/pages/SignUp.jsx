@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -25,8 +24,7 @@ const SignUp = () => {
     register,
     handleSubmit,
     formState: { errors },
-    reset,
-    watch,
+    reset
   } = useForm({
     resolver: zodResolver(schema),
     mode: 'onChange', 
@@ -78,7 +76,6 @@ const SignUp = () => {
             />
             {errors.email && <small className="text-red-500">{errors.email.message}</small>}
           </div>
-
         
           <div className="mb-4">
             <label htmlFor="user-password" className="block text-gray-700 mb-2">
@@ -113,14 +110,16 @@ const SignUp = () => {
             </select>
             {errors.role && <small className="text-red-500">{errors.role.message}</small>}
           </div>
-          
+          <Link to="/login">
           <button
             type="submit"
             className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
-
-          >
+            
+            >
             Sign Up
           </button>
+            </Link>
+
         </form>
 
         <p className="mt-6 text-gray-600">

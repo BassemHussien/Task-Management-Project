@@ -1,9 +1,11 @@
-import React from 'react'
 
 const Tasks = () => {
   return (
     <div>
-      
+      You have tasks here
+      1-......
+      2-........
+      3-.........
     </div>
   )
 }
