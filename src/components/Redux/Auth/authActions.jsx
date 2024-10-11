@@ -12,7 +12,7 @@ export const authCurrent = (currentUser) => (dispatch) => {
     if (currentUser) {
       // Fetch additional details (like role) from Firestore or custom logic
       let name = currentUser.displayName || '';
-      let email = currentUser.email;
+      let email = currentUser.email || '';
       let role = ''; // Example role; fetch actual role from Firestore or backend
   
       dispatch({
@@ -24,7 +24,7 @@ export const authCurrent = (currentUser) => (dispatch) => {
         },
       });
     }
-  };
+};
 export const logout = () => ({
     type: LOGOUT,
 })

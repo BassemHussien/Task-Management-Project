@@ -1,27 +1,47 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Task_Management from '../utils/Task_Management.png';
-
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+// import { toast } from 'react-toastify';
+import app from '../components/Firebase/firebase';
 // Define the validation schema using Zod
 const schema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
 });
 
 const ForgotPassword = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm({
-    resolver: zodResolver(schema),
-    mode: 'onChange', 
-  });
+  const {register, handleSubmit, formState: { errors }, reset, getValues} = useForm({resolver: zodResolver(schema),mode: 'onChange'});
+  const auth = getAuth(app);
+  const [error, setError] = useState('');
+  // console.log(auth);
+  const [inputEmail, setInputEmail] = useState('');
 
-  const onSubmit = (data) => {
-    console.log(data); 
+  const handleInputChange = (e) => {
+    setInputEmail(e.target.value);
+    setError('');
+    console.log(inputEmail);
+  };
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    const emailValue = getValues('email');
+    console.log(emailValue);
+    // await sendPasswordResetEmail(auth, emailValue).then(()=>{
+    //   console.log('Password reset email sent successfully');
+    // }).catch((error)=>{
+    //   setError(error.message);
+    //   console.log(error.message);
+    // });
+    try {
+      await sendPasswordResetEmail(auth, emailValue);
+      console.log('Password reset email sent successfully');
+    } catch (error) {
+      setError(error.message);
+      console.log(error.message)
+    }
     reset(); 
   };
 
@@ -34,7 +54,7 @@ const ForgotPassword = () => {
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 bg-white">
         <h1 className="noto-serif-oriya-wht-700 noto-serif-lg-h2 mb-8 noto-serif-oriya">Forgot Password!</h1>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md">
+        <form onSubmit={(e)=>{onSubmit(e)}} className="w-full max-w-md">
      
           <div className="mb-4">
             <label htmlFor="user-email" className="block text-sm font-bold text-gray-700 mb-2">
@@ -45,10 +65,11 @@ const ForgotPassword = () => {
               id="user-email"
               placeholder="hello@mail.com"
               autoComplete="off"
-              {...register('email')}
+              {...register('email',{
+                onChange:(e)=>{handleInputChange(e)}
+              })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {errors.email && <small className="text-red-500">{errors.email.message}</small>}
           </div>
 
           <button
@@ -63,6 +84,7 @@ const ForgotPassword = () => {
           Already Registered?{' '}
           <Link to="/login" className="text-blue-500 hover:underline">Login</Link>
         </p>
+        {error && <small className="text-red-500 text-md">Enter Authorized Email!</small>}
       </div>
     </div>
   );

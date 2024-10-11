@@ -10,7 +10,7 @@ import app from '../components/Firebase/firebase';
 import { getAuth, createUserWithEmailAndPassword, updateProfile  } from 'firebase/auth';
 import { useState } from 'react';
 import { useSelector, useDispatch} from 'react-redux';
-import {authCurrent} from '../components/Redux/Auth/authActions';
+import {authCurrent, AUTHORIZED} from '../components/Redux/Auth/authActions';
 
 // Define the validation schema using Zod
 const schema = z.object({
@@ -27,10 +27,7 @@ const schema = z.object({
 });
 
 const SignUp = () => {
-  const { register, formState: { errors }, getValues} = useForm({ 
-    resolver: zodResolver(schema), 
-    mode: 'onChange' 
-  });
+  const { register, formState: { errors }, reset, getValues} = useForm({ resolver: zodResolver(schema), mode: 'onChange' });
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const auth = getAuth(app);
@@ -42,7 +39,6 @@ const SignUp = () => {
   const handleInputChange = () => {
     const formValues = getValues();
     setInput(formValues); // Update local state with form values
-    dispatch(authCurrent(input));
     console.log('Form values on change:', input);
   };
 
@@ -61,7 +57,8 @@ const SignUp = () => {
       await updateProfile(user, { displayName: username });
       
       // Dispatch action to update Redux state with user data
-      dispatch(authCurrent({ name: username, email: email, role: role }));
+      // dispatch(authCurrent({ name: input.username, email: input.email, role: input.role }));
+      dispatch(authCurrent({type: AUTHORIZED, payload:input}));
       console.log('Store is:', userAuth);
       
       console.log("Form submitted with values:", { username, role, email, password });
@@ -73,6 +70,7 @@ const SignUp = () => {
       setError(error.message);
       console.log('Error during signup:', error.message);
     }
+    reset();
   };
 
   return (
@@ -162,6 +160,7 @@ const SignUp = () => {
           Already have an account?{' '}
           <Link to="/login" className="text-blue-500 hover:underline">Log in here</Link>
         </p>
+        {error && <small className="text-red-500">Email Already in use!</small>}
       </div>
     </div>
   );

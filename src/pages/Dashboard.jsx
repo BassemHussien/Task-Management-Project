@@ -39,7 +39,7 @@ const Dashboard = () => {
   }
   const handleLogout = async () => {
     await signOut(authFirbase);
-    store.dispatch(logout())
+    dispatch(logout())
     navigate('/login')
   }
 

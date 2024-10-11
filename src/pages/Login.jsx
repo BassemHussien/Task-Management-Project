@@ -24,17 +24,18 @@ const initialState = {
   email: '',
   password: '',
 }
+
 const Login = () => {
-  const {register, handleSubmit,formState: { errors }} = useForm({resolver: zodResolver(schema), mode: 'onChange'});
+  const {register, handleSubmit,formState: { errors }, reset} = useForm({resolver: zodResolver(schema), mode: 'onChange'});
   const [input, setInput] = useState(initialState);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const auth = getAuth(app);
-  const loading = useSelector((state) => state.auth); /*********/
-  const [isloading, setLoading] = useState(loading);  /*********/
+  const userAuth = useSelector((state) => state.auth); /*********/
+  const [isloading, setLoading] = useState(userAuth.loading);  /*********/
   const dispatch = useDispatch(); /*********/
 
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     setInput({...input, [e.target.name]: e.target.value});
     setError('');
     console.log(input);
@@ -44,6 +45,7 @@ const Login = () => {
     try {
       setInput(initialState);
       const userCredentials = await signInWithEmailAndPassword(auth, input.email, input.password);
+      // auth.currentUser = userCredentials.user;
       setLoading(false);  /*********/
       dispatch(authCurrent({type: AUTHORIZED}));  /*********/
       navigate('/dashboard');
@@ -52,6 +54,7 @@ const Login = () => {
       setError(error.message);
       // error? console.log(error.message): null
     }
+    reset();
   };
 
   return (
@@ -74,8 +77,10 @@ const Login = () => {
               id="user-email"
               placeholder="hello@mail.com"
               autoComplete="off"
-              {...register('email')}
-              onChange={handleChange}
+              {...register('email',{
+                onChange:(e)=>{handleInputChange(e)}
+              })}
+              // onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.email && <small className="text-red-500">{errors.email.message}</small>}
@@ -91,8 +96,10 @@ const Login = () => {
               id="user-password"
               placeholder="******"
               autoComplete="off"
-              {...register('password')}
-              onChange={handleChange}
+              {...register('password',{
+                onChange:(e)=>{handleInputChange(e)}
+              })}
+              // onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.password && <small className="text-red-500">{errors.password.message}</small>}
@@ -110,7 +117,7 @@ const Login = () => {
         </p>
         {error && 
         <>
-          <p className="text-red-500">You are not registered!</p>
+          <p className="text-red-500">You are not registered or password is wrong!</p>
           <div className='w-full flex justify-center align-middle mt-5'>
           <Link to="/signup">
                     <button
