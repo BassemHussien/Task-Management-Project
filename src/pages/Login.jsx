@@ -1,8 +1,14 @@
-import { Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+/* eslint-disable no-unused-vars */
+// import { getAuth } from 'firebase/auth';
+import { Link, useNavigate } from 'react-router-dom';
+import { set, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Task_Management from '../utils/Task_Management.png';
+import { useState } from 'react';
+// import auth from '../components/Firebase/firebase'
+import {getAuth, signInWithEmailAndPassword} from 'firebase/auth'
+import app from '../components/Firebase/firebase';
 
 // Define the validation schema using Zod
 const schema = z.object({
@@ -12,21 +18,33 @@ const schema = z.object({
     .min(6, { message: 'Password must be at least 6 characters long' })
     .max(20, { message: 'Password must be less than 20 characters long' }),
 });
-
+const initialState = {
+  email: '',
+  password: '',
+}
 const Login = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm({
-    resolver: zodResolver(schema),
-    mode: 'onChange',
-  });
+  const {register, handleSubmit,formState: { errors }} = useForm({resolver: zodResolver(schema), mode: 'onChange'});
+  const [input, setInput] = useState(initialState);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const auth = getAuth(app);
 
-  const onSubmit = (data) => {
-    console.log(data);
-    reset();
+  const handleChange = (e) => {
+    setInput({...input, [e.target.name]: e.target.value});
+    setError('');
+    console.log(input);
+  };
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setInput(initialState);
+      const userCredentials = await signInWithEmailAndPassword(auth, input.email, input.password);
+      navigate('/dashboard');
+      console.log("User ID: ",userCredentials.user.uid, "\n", "User Email: ", userCredentials.user.email);
+    } catch (error) {
+      setError(error.message);
+      // error? console.log(error.message): null
+    }
   };
 
   return (
@@ -38,7 +56,7 @@ const Login = () => {
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 bg-white">
         <h1 className="noto-serif-oriya-wht-700 noto-serif-lg-h2 mb-8">Welcome Back!</h1>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md">
+        <form className="w-full max-w-md">
 
           <div className="mb-4">
             <label htmlFor="user-email" className="block text-sm font-bold text-gray-700 mb-2">
@@ -50,6 +68,7 @@ const Login = () => {
               placeholder="hello@mail.com"
               autoComplete="off"
               {...register('email')}
+              onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.email && <small className="text-red-500">{errors.email.message}</small>}
@@ -66,23 +85,38 @@ const Login = () => {
               placeholder="******"
               autoComplete="off"
               {...register('password')}
+              onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.password && <small className="text-red-500">{errors.password.message}</small>}
           </div>
-          <Link to="/login/dashboard">
           <button
-            type="submit"
+            onClick={(e) => onSubmit(e)}
             className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
             >
             LOGIN
           </button>
-            </Link>
         </form>
 
         <p className="mt-6 text-blue-700 hover:underline cursor-pointer">
           <Link to="/forgot-password">Forgot Password?</Link>
         </p>
+        {error && 
+        <>
+          <p className="text-red-500">You are not registered!</p>
+          <div className='w-full flex justify-center align-middle mt-5'>
+          <Link to="/signup">
+                    <button
+                      type="button"
+                      className=" bg-orange-500 text-white p-2 px-8 rounded-lg hover:bg-orange-700 transition duration-300"
+                      
+                      >
+                      Create Account 
+                    </button>
+                  </Link>
+          </div>
+        </>
+        }
       </div>
     </div>
   );

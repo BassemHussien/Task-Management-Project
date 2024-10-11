@@ -1,10 +1,17 @@
+import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Task_Management from '../utils/Task_Management.png';
 import '../app.css';
-import '../main.min.css'
+import '../main.min.css';
+import app from '../components/Firebase/firebase';
+import { getAuth, createUserWithEmailAndPassword, updateProfile  } from 'firebase/auth';
+import { useState } from 'react';
+import { useSelector, useDispatch} from 'react-redux';
+import {authCurrent} from '../components/Redux/Auth/authActions';
+
 // Define the validation schema using Zod
 const schema = z.object({
   username: z
@@ -20,19 +27,52 @@ const schema = z.object({
 });
 
 const SignUp = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset
-  } = useForm({
-    resolver: zodResolver(schema),
-    mode: 'onChange', 
+  const { register, formState: { errors }, getValues} = useForm({ 
+    resolver: zodResolver(schema), 
+    mode: 'onChange' 
   });
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const auth = getAuth(app);
+  const userAuth = useSelector((state) => state.auth);
+  const [input, setInput] = useState(userAuth);
+  const dispatch = useDispatch();
 
-  const onSubmit = (data) => {
-    console.log(data); 
-    reset(); 
+  // Handle input change to dynamically update the form values
+  const handleInputChange = () => {
+    const formValues = getValues();
+    setInput(formValues); // Update local state with form values
+    dispatch(authCurrent(input));
+    console.log('Form values on change:', input);
+  };
+
+  // Handle form submission
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Get the form values at the time of submission
+      const { username, role, email, password } = getValues();
+
+      // Create the user with Firebase authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Update the user profile with the provided username
+      await updateProfile(user, { displayName: username });
+      
+      // Dispatch action to update Redux state with user data
+      dispatch(authCurrent({ name: username, email: email, role: role }));
+      console.log('Store is:', userAuth);
+      
+      console.log("Form submitted with values:", { username, role, email, password });
+      console.log("Firebase user:", user);
+      
+      // Navigate to another route after successful signup
+      navigate('/login');
+    } catch (error) {
+      setError(error.message);
+      console.log('Error during signup:', error.message);
+    }
   };
 
   return (
@@ -44,89 +84,83 @@ const SignUp = () => {
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 bg-white">
         <h1 className=" mb-8 noto-serif-oriya-wht-700 noto-serif-lg-h2">Create New Account</h1>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md">
-         
+        <form className="w-full max-w-md" onSubmit={onSubmit}>
           <div className="mb-4">
-            <label htmlFor="username" className="block text-gray-700 mb-2">
-              Username
-            </label>
+            <label htmlFor="username" className="block text-gray-700 mb-2">Username</label>
             <input
               type="text"
               id="username"
+              name='name'
               placeholder="Enter your username"
               autoComplete="off"
-              {...register('username')}
+              {...register('username',{
+                onChange:(e)=>{handleInputChange(e)}
+              })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.username && <small className="text-red-500">{errors.username.message}</small>}
           </div>
 
-         
           <div className="mb-4">
-            <label htmlFor="user-email" className="block text-gray-700 mb-2">
-              Email
-            </label>
+            <label htmlFor="user-email" className="block text-gray-700 mb-2">Email</label>
             <input
               type="email"
               id="user-email"
+              name='email'
               placeholder="Enter your email"
               autoComplete="off"
-              {...register('email')}
+              {...register('email',{
+                onChange:(e)=>{handleInputChange(e)}
+              })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.email && <small className="text-red-500">{errors.email.message}</small>}
           </div>
-        
+
           <div className="mb-4">
-            <label htmlFor="user-password" className="block text-gray-700 mb-2">
-              Password
-            </label>
+            <label htmlFor="user-password" className="block text-gray-700 mb-2">Password</label>
             <input
               type="password"
               id="user-password"
+              name='password'
               placeholder="Enter your password"
               autoComplete="off"
-              {...register('password')}
+              {...register('password',{
+                onChange:(e)=>{handleInputChange(e)}
+              })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.password && <small className="text-red-500">{errors.password.message}</small>}
           </div>
 
-         
           <div className="mb-4">
-            <label htmlFor="role-select" className="block text-gray-700 mb-2">
-              Select your Role
-            </label>
+            <label htmlFor="role-select" className="block text-gray-700 mb-2">Select your Role</label>
             <select
-              {...register('role')}
+              {...register('role',{
+                onChange:(e)=>{handleInputChange(e)}
+              })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               id="role-select"
+              name='role'
             >
-              <option value="" disabled>
-                Select
-              </option>
+              <option value="" disabled>Select</option>
               <option value="admin">Admin</option>
               <option value="user">User</option>
             </select>
             {errors.role && <small className="text-red-500">{errors.role.message}</small>}
           </div>
-          <Link to="/login">
+
           <button
             type="submit"
             className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
-            
-            >
+          >
             Sign Up
           </button>
-            </Link>
-
         </form>
 
         <p className="mt-6 text-gray-600">
           Already have an account?{' '}
-          <Link to="/login" className="text-blue-500 hover:underline">
-            Log in here
-          </Link>
+          <Link to="/login" className="text-blue-500 hover:underline">Log in here</Link>
         </p>
       </div>
     </div>
