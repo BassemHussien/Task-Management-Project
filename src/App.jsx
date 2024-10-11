@@ -7,7 +7,7 @@
 // import "./App.css";
 // import Dashboard from "./pages/Dashboard";
 import PageNotFound from "./pages/PageNotFound";
-// import ProtectedRoute from "./ProtectedRoute";
+import ProtectedRoute from "./ProtectedRoute";
 // import Admin from "./components/Redux/Admin/Admin";
 // import User from "./components/Redux/User/User";
 // function App() {
@@ -56,12 +56,9 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
             <Route path="*" element={<PageNotFound />} />
-            {/* <Route path="/admin1" element={<Admin />}/> */}
-            {/* Admin Profile */}
-            {/* <Route path="dashboard/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>}/> */}
             {/* User Profile */}
-            {/* <Route path="dashboard/user" element={<ProtectedRoute><User /></ProtectedRoute>}/> */}
-          <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}/>
+          {/* <Route path="/dashboard" element={<Dashboard />} /> */}
         </Routes>
       </Provider>
     </Router>

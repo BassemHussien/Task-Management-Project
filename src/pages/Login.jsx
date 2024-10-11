@@ -9,6 +9,8 @@ import { useState } from 'react';
 // import auth from '../components/Firebase/firebase'
 import {getAuth, signInWithEmailAndPassword} from 'firebase/auth'
 import app from '../components/Firebase/firebase';
+import { useSelector, useDispatch } from 'react-redux';
+import {authCurrent, AUTHORIZED} from '../components/Redux/Auth/authActions';
 
 // Define the validation schema using Zod
 const schema = z.object({
@@ -28,6 +30,9 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const auth = getAuth(app);
+  const loading = useSelector((state) => state.auth); /*********/
+  const [isloading, setLoading] = useState(loading);  /*********/
+  const dispatch = useDispatch(); /*********/
 
   const handleChange = (e) => {
     setInput({...input, [e.target.name]: e.target.value});
@@ -39,8 +44,10 @@ const Login = () => {
     try {
       setInput(initialState);
       const userCredentials = await signInWithEmailAndPassword(auth, input.email, input.password);
+      setLoading(false);  /*********/
+      dispatch(authCurrent({type: AUTHORIZED}));  /*********/
       navigate('/dashboard');
-      console.log("User ID: ",userCredentials.user.uid, "\n", "User Email: ", userCredentials.user.email);
+      console.log("User ID: ",userCredentials.user.uid, "\n", "User Email: ", userCredentials.user.email, "Loading: ",isloading); /*********/
     } catch (error) {
       setError(error.message);
       // error? console.log(error.message): null
