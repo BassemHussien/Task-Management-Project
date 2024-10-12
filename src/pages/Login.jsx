@@ -22,38 +22,50 @@ const schema = z.object({
 });
 const initialState = {
   email: '',
-  password: '',
+  isloading:''
 }
 
 const Login = () => {
   const {register, handleSubmit,formState: { errors }, reset} = useForm({resolver: zodResolver(schema), mode: 'onChange'});
   const [input, setInput] = useState(initialState);
   const [error, setError] = useState('');
+  const [email, setEmail] = useState('');
   const navigate = useNavigate();
   const auth = getAuth(app);
   const userAuth = useSelector((state) => state.auth); /*********/
   const [isloading, setLoading] = useState(userAuth.loading);  /*********/
   const dispatch = useDispatch(); /*********/
-
+  
   const handleInputChange = (e) => {
     setInput({...input, [e.target.name]: e.target.value});
+    // setEmail(input.email);
     setError('');
+    setLoading(false);  /*********/
     console.log(input);
+    // console.log(userAuth);
   };
   const onSubmit = async (e) => {
     e.preventDefault();
+    console.log(isloading);
+    console.log(input);
     try {
-      setInput(initialState);
       const userCredentials = await signInWithEmailAndPassword(auth, input.email, input.password);
-      // auth.currentUser = userCredentials.user;
+      auth.currentUser = userCredentials.user;
       setLoading(false);  /*********/
-      dispatch(authCurrent({type: AUTHORIZED}));  /*********/
-      navigate('/dashboard');
-      console.log("User ID: ",userCredentials.user.uid, "\n", "User Email: ", userCredentials.user.email, "Loading: ",isloading); /*********/
+      // try {
+      //   localStorage.setItem('user', JSON.stringify({ isLogined: true }));
+      // } catch (e) {
+      //   console.error('Storage error:', e);
+      // }
+      // dispatch(authCurrent({role: role, loading: isloading, email: email}));  /*********/
+      // dispatch(authCurrent({name: userCredentials.user.displayName, loading: false, email: userCredentials.user.email,}))
+      navigate('/dashboard/current-user');
+      console.log("User ID: ",userCredentials.user.uid, "\n", "User Email: ", userCredentials.user.email); /*********/
     } catch (error) {
       setError(error.message);
       // error? console.log(error.message): null
     }
+    
     reset();
   };
 

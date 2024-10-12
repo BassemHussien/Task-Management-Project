@@ -57,7 +57,7 @@ function App() {
 
             <Route path="*" element={<PageNotFound />} />
             {/* User Profile */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}/>
+            <Route path="/dashboard/current-user" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}/>
           {/* <Route path="/dashboard" element={<Dashboard />} /> */}
         </Routes>
       </Provider>

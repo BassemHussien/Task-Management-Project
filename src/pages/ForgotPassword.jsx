@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -13,10 +14,9 @@ const schema = z.object({
 });
 
 const ForgotPassword = () => {
-  const {register, handleSubmit, formState: { errors }, reset, getValues} = useForm({resolver: zodResolver(schema),mode: 'onChange'});
+  const {register, formState: { errors }, reset, getValues} = useForm({resolver: zodResolver(schema),mode: 'onChange'});
   const auth = getAuth(app);
   const [error, setError] = useState('');
-  // console.log(auth);
   const [inputEmail, setInputEmail] = useState('');
 
   const handleInputChange = (e) => {
@@ -29,12 +29,6 @@ const ForgotPassword = () => {
     e.preventDefault();
     const emailValue = getValues('email');
     console.log(emailValue);
-    // await sendPasswordResetEmail(auth, emailValue).then(()=>{
-    //   console.log('Password reset email sent successfully');
-    // }).catch((error)=>{
-    //   setError(error.message);
-    //   console.log(error.message);
-    // });
     try {
       await sendPasswordResetEmail(auth, emailValue);
       console.log('Password reset email sent successfully');

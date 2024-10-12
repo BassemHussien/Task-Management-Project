@@ -9,8 +9,6 @@ import '../main.min.css';
 import app from '../components/Firebase/firebase';
 import { getAuth, createUserWithEmailAndPassword, updateProfile  } from 'firebase/auth';
 import { useState } from 'react';
-import { useSelector, useDispatch} from 'react-redux';
-import {authCurrent, AUTHORIZED} from '../components/Redux/Auth/authActions';
 
 // Define the validation schema using Zod
 const schema = z.object({
@@ -29,45 +27,54 @@ const schema = z.object({
 const SignUp = () => {
   const { register, formState: { errors }, reset, getValues} = useForm({ resolver: zodResolver(schema), mode: 'onChange' });
   const navigate = useNavigate();
-  const [error, setError] = useState('');
   const auth = getAuth(app);
-  const userAuth = useSelector((state) => state.auth);
-  const [input, setInput] = useState(userAuth);
-  const dispatch = useDispatch();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [Password, setUserPassword] = useState('');
+  const [fireError, setFireError] = useState('');
 
   // Handle input change to dynamically update the form values
   const handleInputChange = () => {
     const formValues = getValues();
-    setInput(formValues); // Update local state with form values
-    console.log('Form values on change:', input);
+    // setInput(formValues); // Update local state with form values
+    setName(formValues.username);
+    setEmail(formValues.email);
+    setUserPassword(formValues.password);
+    console.log('Form values on change:', {name, email, Password});
   };
 
   // Handle form submission
-  const onSubmit = async (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     try {
       // Get the form values at the time of submission
-      const { username, role, email, password } = getValues();
+      // const { username, userRole, userEmail, userPassword } = getValues();
 
       // Create the user with Firebase authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      if(errors.username || (''===getValues().username)){
+        setFireError('Username is required!');
+      }
+      else{
+        const userCredential = await createUserWithEmailAndPassword(auth, email, Password);
+        const user = userCredential.user;
+        await updateProfile(user, { displayName: name });
+        // Update the user profile with the provided username
+  
+        console.log("Form submitted with values:", { name, email, Password });
+        console.log("Firebase user:", user);
+        
+        // Navigate to another route after successful signup
+        navigate('/login');
+      }
       
-      // Update the user profile with the provided username
-      await updateProfile(user, { displayName: username });
-      
-      // Dispatch action to update Redux state with user data
-      // dispatch(authCurrent({ name: input.username, email: input.email, role: input.role }));
-      dispatch(authCurrent({type: AUTHORIZED, payload:input}));
-      console.log('Store is:', userAuth);
-      
-      console.log("Form submitted with values:", { username, role, email, password });
-      console.log("Firebase user:", user);
-      
-      // Navigate to another route after successful signup
-      navigate('/login');
     } catch (error) {
-      setError(error.message);
+      if(error.message === 'Firebase: Error (auth/email-already-in-use).'){
+        setFireError('Email already in use');
+      }else if(error.message === 'Firebase: Error (auth/invalid-email).'){
+        setFireError('Invalid Email Address');
+      }else{
+        setFireError('Password is required!');
+      }
       console.log('Error during signup:', error.message);
     }
     reset();
@@ -82,13 +89,13 @@ const SignUp = () => {
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 bg-white">
         <h1 className=" mb-8 noto-serif-oriya-wht-700 noto-serif-lg-h2">Create New Account</h1>
 
-        <form className="w-full max-w-md" onSubmit={onSubmit}>
+        <form className="w-full max-w-md" onSubmit={handleFormSubmit}>
           <div className="mb-4">
             <label htmlFor="username" className="block text-gray-700 mb-2">Username</label>
             <input
               type="text"
               id="username"
-              name='name'
+              name='username'
               placeholder="Enter your username"
               autoComplete="off"
               {...register('username',{
@@ -131,23 +138,6 @@ const SignUp = () => {
             {errors.password && <small className="text-red-500">{errors.password.message}</small>}
           </div>
 
-          <div className="mb-4">
-            <label htmlFor="role-select" className="block text-gray-700 mb-2">Select your Role</label>
-            <select
-              {...register('role',{
-                onChange:(e)=>{handleInputChange(e)}
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              id="role-select"
-              name='role'
-            >
-              <option value="" disabled>Select</option>
-              <option value="admin">Admin</option>
-              <option value="user">User</option>
-            </select>
-            {errors.role && <small className="text-red-500">{errors.role.message}</small>}
-          </div>
-
           <button
             type="submit"
             className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-300"
@@ -160,7 +150,7 @@ const SignUp = () => {
           Already have an account?{' '}
           <Link to="/login" className="text-blue-500 hover:underline">Log in here</Link>
         </p>
-        {error && <small className="text-red-500">Email Already in use!</small>}
+        {fireError && <small className="text-red-500">{fireError}</small>}
       </div>
     </div>
   );

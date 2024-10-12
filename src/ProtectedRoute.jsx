@@ -1,17 +1,16 @@
-/* eslint-disable react/prop-types */
-// import { selectadminState } from "./components/Redux/Admin/adminSlice";
-// import { selectUserState } from "./components/Redux/User/userSlice";
-
+import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }) => {
-  const loading = useSelector((state) => state.auth.loading);
-
-  if (loading) {
-    return <Navigate to="/login" />;
-  }
-
+  const isUser = useSelector((state) => state.auth);
+  
+  useEffect(() => {
+    if (isUser) {
+      <Navigate to="/login" />;
+    }
+  }, [isUser]);
+  
   return children;
 };
 

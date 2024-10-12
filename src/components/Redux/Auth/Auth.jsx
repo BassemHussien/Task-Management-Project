@@ -3,7 +3,7 @@ const initialState = {
   name: '',
   email: '',
   role: null,
-  loading: true,
+  loading: false,
 }
 const authReducer = (state = initialState, action) => {
   switch(action.type){
