@@ -1,6 +1,7 @@
 import { logout } from '../components/Redux/Auth/authActions';
 import { useEffect, useState } from 'react';
 import app from '../components/Firebase/firebase';
+import { getDatabase, push, ref, set, get } from "firebase/database";
 import { signOut, getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
@@ -32,6 +33,32 @@ const Dashboard = () => {
     navigate('/login');
   };
 
+  const db = getDatabase(app);
+  const docRef = push(ref(db, 'users/info'));
+  const saveData = async () => {
+    await set(docRef, {
+      username: user.displayName,
+      email: user.email,
+      profile_picture: user.photoURL
+    }).then(()=>{
+      alert('User saved to FireStore');
+    }).catch((error)=>{
+      alert('Error saving user to FireStore: ', error.message);
+    });
+  }
+  const fetchData = async ()=>{
+    const fetchRef = ref(db, 'users/info');
+    try {
+      const snapshot = await get(fetchRef);
+      if(snapshot.exists()){
+        console.log(Object.values(snapshot.val()));
+      }else{
+        alert('No data found');
+      }
+    } catch (error) {
+      console.error("Error fetching user data from FireStore: ", error);
+    }
+  }
   return (
     <div className='w-full flex flex-col justify-center align-middle mt-5'>
       {user ? (
@@ -46,6 +73,27 @@ const Dashboard = () => {
             >
               Logout
             </button>
+          </div>
+          {/* Add database actions */}
+          <div className="firestore-btns flex justify-center gap-10">
+            <div className='mt-5'>
+              <button
+                type="button"
+                className="bg-green-500 text-white p-2 px-8 rounded-lg hover:bg-green-600 transition duration-300"
+                onClick={saveData}
+              >
+                Save this user to FireStore
+              </button>
+            </div>
+            <div className='mt-5'>
+              <button
+                type="button"
+                className="bg-green-500 text-white p-2 px-8 rounded-lg hover:bg-green-600 transition duration-300"
+                onClick={fetchData}
+              >
+                Get user info from FireStore
+              </button>
+            </div>
           </div>
         </div>
       ) : (
