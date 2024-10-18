@@ -2,69 +2,80 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Note from '../utils/Note.png';
-import AddTaskPopup from '../components/addTask';
+import AddTaskPopup from '../components/AddTask';
 import TaskCard from '../components/TaskCard';
 import ProfileInfo from '../components/ProfileInfo';
 import app from '../components/Firebase/firebase';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getDatabase, ref, set, push, get } from "firebase/database";
+import { getDatabase, ref, set, push, get, remove } from 'firebase/database';
 
 const Dashboard = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [taskToUpdate, setTaskToUpdate] = useState(null);
+  const [user, setUser] = useState({ email: '', displayName: '' });
+  const [loading, setLoading] = useState(true); // Prevent premature data refetch
 
   const authFirebase = getAuth(app);
-  const [user, setUser] = useState({email: '', displayName: ''});
-
   const db = getDatabase(app);
-  const tasksRef = ref(db, `users/${user.displayName}/tasks`);
 
-  // Fetch data when the component is mounted or reloaded
+  // Fetch user and tasks once the user is authenticated
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const snapshot = await get(tasksRef);
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          const tasksArray = Object.values(data); // Convert the fetched tasks object to an array
-          setTasks(tasksArray);
-          
-        } else {
-          console.log("No tasks found");
-        }
-      } catch (error) {
-        console.error("Error fetching tasks from Firebase: ", error);
-      }
-    };
-
-    fetchData(); // Call the fetch function
-    
-    const unsubscribe = onAuthStateChanged(authFirebase, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(authFirebase, async (currentUser) => {
       if (currentUser) {
-        // Set the user in local state
-        setUser(currentUser);
-        
+        setUser(currentUser); // Set user state
+
+        const tasksRef = ref(db, `users/${currentUser.displayName}/tasks`);
+        try {
+          const snapshot = await get(tasksRef);
+          if (snapshot.exists()) {
+            const data = snapshot.val();
+            const tasksArray = Object.keys(data).map((key) => ({
+              id: key,
+              ...data[key],
+            }));
+            setTasks(tasksArray);
+          } else {
+            console.log('No tasks found');
+          }
+        } catch (error) {
+          console.error('Error fetching tasks from Firebase:', error);
+        }
       } else {
-        setUser(null);  // No user logged in
+        setUser(null); // No user logged in
       }
+      setLoading(false); // Stop loading once data is fetched
     });
 
-    // Cleanup on unmount
-    return () => unsubscribe();
-  }, [authFirebase, tasksRef]);
+    return () => unsubscribe(); // Cleanup on unmount
+  }, [authFirebase, db]);
 
-  // Save new task to the database by pushing it (appending)
+  // Save new task to Firebase by pushing it
   const saveData = async (newTask) => {
+    const tasksRef = ref(db, `users/${user.displayName}/tasks`);
     const newTaskRef = push(tasksRef);
-    await set(newTaskRef, newTask)
-      .then(() => {
-        alert('Task added to Firebase');
-      })
-      .catch((error) => {
-        alert('Error adding task to Firebase: ', error.message);
-      });
+    try {
+      await set(newTaskRef, newTask);
+      setTasks([...tasks, { id: newTaskRef.key, ...newTask }]);
+    } catch (error) {
+      console.log('Error adding task to Firebase:', error.message);
+    }
+  };
 
+  // Update existing task in Firebase and local state
+  const handleUpdateTask = async (updatedTask) => {
+    const taskRef = ref(db, `users/${user.displayName}/tasks/${updatedTask.id}`);
+    try {
+      await set(taskRef, updatedTask);
+      const updatedTasks = tasks.map((task) =>
+        task.id === updatedTask.id ? updatedTask : task
+      );
+      setTasks(updatedTasks);
+      setTaskToUpdate(null); // Reset taskToUpdate
+      console.log('Task updated successfully in Firebase');
+    } catch (error) {
+      console.error('Error updating task in Firebase:', error.message);
+    }
   };
 
   const toggleSidebar = () => {
@@ -72,26 +83,22 @@ const Dashboard = () => {
   };
 
   const handleAddTask = (newTask) => {
-    setTasks([...tasks, newTask]); // Add task to local state
-    saveData(newTask); // Save task to Firebase
+    saveData(newTask); // Save new task to Firebase
   };
 
-  const handleDelete = (taskToDelete) => {
-    setTasks(tasks.filter((task) => task !== taskToDelete));
-    // You should also handle deletion from Firebase if needed
+  const handleDelete = async (taskToDelete) => {
+    const taskRef = ref(db, `users/${user.displayName}/tasks/${taskToDelete.id}`);
+    try {
+      await remove(taskRef);
+      setTasks(tasks.filter((task) => task.id !== taskToDelete.id));
+      console.log('Task deleted successfully from Firebase');
+    } catch (error) {
+      console.log('Error deleting task from Firebase:', error.message);
+    }
   };
 
   const handleUpdate = (task) => {
-    setTaskToUpdate(task);
-  };
-
-  const handleUpdateTask = (updatedTask) => {
-    const updatedTasks = tasks.map((task) =>
-      task.name === updatedTask.name ? updatedTask : task
-    );
-    setTasks(updatedTasks);
-    setTaskToUpdate(null);
-    // Save updated tasks to Firebase if needed
+    setTaskToUpdate(task); // Open popup with the task to update
   };
 
   const totalTasks = tasks.length;
@@ -192,23 +199,29 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {tasks.map((task, index) => (
-            <TaskCard
-              key={index}
-              task={task}
-              onDelete={() => handleDelete(task)}
-              onUpdate={() => handleUpdate(task)}
-            />
-          ))}
-        </div>
-
-        <img
-          src={Note}
-          className={`absolute bottom-6 right-6 opacity-30 w-52 ${isOpen ? 'opacity-0' : 'opacity-0'}`}
-          alt="Task Icon"
-        />
+        {loading ? (
+          <p className="text-white">Loading tasks...</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {tasks.map((task, index) => (
+              <TaskCard
+                key={index}
+                task={task}
+                onDelete={() => handleDelete(task)}
+                onUpdate={() => handleUpdate(task)}
+              />
+            ))}
+          </div>
+        )}
       </div>
+
+      <img
+        src={Note}
+        className={`absolute bottom-6 right-6 opacity-30 w-52 ${
+          isOpen ? 'opacity-0' : 'opacity-30'
+        } transition-opacity duration-500`}
+        alt="Note Icon"
+      />
     </div>
   );
 };
